@@ -125,7 +125,6 @@ async function tvl() {
     daoVaultCandidates.push({ dao: daoPub, base, quote, data });
   }
 
-  // Validate offset-derived vaults via batched getMultipleAccountsInfo
   const initialVaultAddrs = [
     ...new Set(
       daoVaultCandidates.flatMap(({ base, quote }) => [base, quote]).filter(Boolean)
@@ -204,7 +203,7 @@ async function tvl() {
 
 const methodology = {
   TVL:
-    "Calculated as the dollarized sum of all SPL token balances held by Futarchy AMM Base and Quote Vaults. Vaults are discovered per DAO by reading raw account data, extracting Base/Quote vault pubkeys, validating them as SPL token accounts, and summing balances across all DAOs."
+    "Calculated as the dollarized sum of all SPL token balances held by Futarchy AMM Base and Quote Vaults."
 };
 
 module.exports = {
