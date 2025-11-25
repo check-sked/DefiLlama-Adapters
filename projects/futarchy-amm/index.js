@@ -4,14 +4,10 @@ const { PublicKey } = require('@solana/web3.js')
 const PROGRAM_ID = 'FUTARELBfJfQ8RDGhg1wdhddq1odMAJUePHFuBYfUxKq' // Futarchy AMM program
 const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' // Defined to verify token accounts
 
-// Find byte offset of pubkeys inside account buffers
-function findPublicKeyOffset(buffer, pubkey) {
-  const pubkeyBytes = new PublicKey(pubkey).toBuffer();
-  for (let i = 0; i <= buffer.length - 32; i++) {
-    if (buffer.slice(i, i + 32).equals(pubkeyBytes)) return i;
-  }
-  return -1;
-}
+// Hardcoded offsets
+const DAO_ACCOUNT_SIZE = 1163;
+const BASE_VAULT_OFFSET = 221;
+const QUOTE_VAULT_OFFSET = 253;
 
 // Check if account is a valid SPL token account
 function isValidTokenAccount(info) {
@@ -65,39 +61,10 @@ async function tvl() {
 
   const daoAccounts = await connection.getProgramAccounts(
     new PublicKey(PROGRAM_ID),
-    { filters: [{ dataSize: 1129 }] }
+    { filters: [{ dataSize: DAO_ACCOUNT_SIZE }] }
   );
 
   console.log("DAO accounts found:", daoAccounts.length);
-
-  const knownDao = 'BLkBSE96kQys7SrMioKxeMiVbeo4Ckk2Y4n1JphKxYnv';
-  const knownBaseVault = '71naRuPZLV3T6BSk4YpNYhyb2kKWbrefDMFu2Q49e9yd';
-  const knownQuoteVault = '4zpwwXCcYrFivt57esQdbLfx1mAPRyDrG7Sf2RgRVc8b';
-
-  let baseVaultOffset = null;
-  let quoteVaultOffset = null;
-
-  const knownDaoAccount = daoAccounts.find(
-    ({ pubkey }) => pubkey.toString() === knownDao
-  );
-
-  if (knownDaoAccount) {
-    baseVaultOffset = findPublicKeyOffset(
-      knownDaoAccount.account.data,
-      knownBaseVault
-    );
-    quoteVaultOffset = findPublicKeyOffset(
-      knownDaoAccount.account.data,
-      knownQuoteVault
-    );
-
-    console.log(`Found offsets - Base: ${baseVaultOffset}, Quote: ${quoteVaultOffset}`);
-  }
-
-  if (baseVaultOffset === null || quoteVaultOffset === null) {
-    console.log("Error: could not determine vault offsets from known DAO.");
-    return {};
-  }
 
   const daoVaultCandidates = []; // { dao, base, quote, data }
   for (const { pubkey, account } of daoAccounts) {
@@ -108,18 +75,18 @@ async function tvl() {
 
     try {
       base = new PublicKey(
-        data.slice(baseVaultOffset, baseVaultOffset + 32)
+        data.slice(BASE_VAULT_OFFSET, BASE_VAULT_OFFSET + 32)
       ).toString();
 
       quote = new PublicKey(
-        data.slice(quoteVaultOffset, quoteVaultOffset + 32)
+        data.slice(QUOTE_VAULT_OFFSET, QUOTE_VAULT_OFFSET + 32)
       ).toString();
 
       console.log(`DAO ${daoPub}:`);
-      console.log(`  Offset-derived Base vault:  ${base}`);
-      console.log(`  Offset-derived Quote vault: ${quote}`);
+      console.log(`  Base vault:  ${base}`);
+      console.log(`  Quote vault: ${quote}`);
     } catch (e) {
-      console.log(`Error parsing DAO ${daoPub} with offsets:`, e.message);
+      console.log(`Error parsing DAO ${daoPub} with hardcoded offsets:`, e.message);
     }
 
     daoVaultCandidates.push({ dao: daoPub, base, quote, data });
