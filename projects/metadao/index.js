@@ -1,3 +1,4 @@
+// Place under MetaDAO parent project as "Futarchy DAO Treasuries"
 const { getConnection, sumTokens2 } = require('../helper/solana')
 const { PublicKey, Connection, Keypair } = require('@solana/web3.js')
 const { Wallet, AnchorProvider } = require('@coral-xyz/anchor')
