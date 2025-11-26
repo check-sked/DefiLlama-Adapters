@@ -4,9 +4,10 @@ const { PublicKey, Connection, Keypair } = require('@solana/web3.js')
 const { Wallet, AnchorProvider } = require('@coral-xyz/anchor')
 const { FutarchyClient } = require("@metadaoproject/futarchy/v0.6")
 
-const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
+const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA") // Defined to verify token accounts
 
 // Throttle
+const SLEEP_MS = 5000
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 // FutarchyService (https://github.com/metaDAOproject/futarchy-coingecko-api/blob/e22678298032647c4e9aa6050ac120bc3b03ebe4/src/services/futarchyService.ts)
@@ -45,7 +46,7 @@ class FutarchyService {
       }
 
       // Throttle DAO fetches
-      if (i % 10 === 0) await sleep(5000)
+      if (i % 10 === 0) await sleep(SLEEP_MS)
     }
 
     return daos
@@ -78,7 +79,7 @@ async function tvl() {
       console.log("Vault fetch error:", vault, e.message)
     }
 
-    await sleep(5000)
+    await sleep(SLEEP_MS)
   }
 
   const uniqueTokenAccounts = [...new Set(tokenAccounts)]
