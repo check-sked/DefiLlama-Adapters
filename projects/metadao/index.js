@@ -121,6 +121,7 @@ async function getMeteoraPositionBalances(connection, positionPda) {
   }
 }
 
+
 // Combined TVL
 async function tvl() {
   const connection = getConnection()
@@ -134,9 +135,11 @@ async function tvl() {
 
   console.log("Found", vaults.length, "Futarchy vaults")
 
+  // Add MetaDAO treasury
+  vaults.push("BxgkvRwqzYFWuDbRjfTYfgTtb41NaFw1aQ3129F79eBT")
+
   const futarchyTokenAccounts = []
   const nftMints = new Set()
-
   const tokenAccountResults = []
   
   for (const vault of vaults) {
@@ -199,7 +202,6 @@ async function tvl() {
 
   console.log("Meteora tokens discovered:", Object.keys(formatted).length)
 
-  // Final
   return sumTokens2({
     chain: 'solana',
     tokenAccounts: futarchyTokenAccounts,
