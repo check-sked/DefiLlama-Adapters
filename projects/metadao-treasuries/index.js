@@ -562,7 +562,7 @@ async function tvl() {
   // Calculate Futarchy AMM LP positions
   const ammBalances = await getFutarchyAmmTvl(connection, excludedDaoAddresses)
 
-  console.log("== Double Counted TVL ==")
+  console.log("== Double Counted Futarchy AMM TVL ==")
   for (const [mint, amt] of Object.entries(ammBalances)) {
     console.log(mint, amt.toString())
   }
@@ -581,6 +581,11 @@ async function tvl() {
   // Process Meteora positions
   const meteoraBalances = await processMeteoraPositions(connection, nftMints)
   console.log("Meteora tokens discovered:", Object.keys(meteoraBalances).length)
+
+  console.log("\n== Double Counted Meteora LP Positions ==")
+  for (const [mint, amt] of Object.entries(meteoraBalances)) {
+    console.log(formatSolanaToken(mint), amt.toString())
+  }
 
   // Merge all balances
   const mergedBalances = { ...ammBalances }
