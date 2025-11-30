@@ -163,7 +163,7 @@ async function getVaultBalance(connection, vaultPk) {
 }
 
 // Futarchy AMM TVL
-async function getFutarchyAmmTvl(connection) {
+async function getFutarchyAmmTvl(connection, excludedDaoAddresses) {
   const balances = {}
 
   console.log("\n=== Futarchy AMM LP Positions ===")
@@ -187,9 +187,16 @@ async function getFutarchyAmmTvl(connection) {
   )
 
   console.log("Found DAO accounts:", daoAccounts.length)
+  
+  // Filter out excluded DAOs
+  const filteredDaoAccounts = daoAccounts.filter(acc => 
+    !excludedDaoAddresses.has(acc.pubkey.toString())
+  )
+  
+  console.log(`Processing ${filteredDaoAccounts.length} DAOs (excluded ${daoAccounts.length - filteredDaoAccounts.length})`)
 
   const daoAmmMap = new Map()
-  for (const acc of daoAccounts) {
+  for (const acc of filteredDaoAccounts) {
     try {
       const ammView = decodeDaoAmm(acc.account.data)
       if (ammView) daoAmmMap.set(acc.pubkey.toString(), ammView)
@@ -373,8 +380,48 @@ async function getMeteoraPositionBalances(connection, positionPda) {
 async function tvl() {
   const connection = getConnection()
 
+  // Excluded DAO/Treasury pairs
+  const EXCLUDED_PAIRS = new Set([
+    'CJCgDqiDtkQvwXT2iiyY7QVajKLH3VRVbcsNQgtttrHn/8qFXMdjWtqwSmZAp1ZFcR9xyGBRq4fDQ9ekKHt47Uvcd',
+    'DMB74TZgN7Rqfwtqqm3VQBgKBb2WYPdBqVtHbvB4LLeV/7z4xFDoYd7rGb5WiuAiTwrb67AdSWSLQz3pUDYtkiBwS',
+    '651uV1hcd7SprwwkumFfkWtx5WrnD53awpjduGtGsHzS/Dp4vBGNvFamZyXnPXyzBXzn3ksjjvtqkt8D7aq4itH6C',
+    'Eo1BLMVRLJspjP5dDnwzK1m6FxMUcQDG6kDA8CjWPzRW/HYxxFY3BgPe3CG6gpuisct572stCJ93gxaJ1ZzXxsWSo',
+    'EbcsPbXZa81xUunDSmzYrcAWGURxcZB6BTkgzqvNJBZH/85pCdkCcWSjyrmtqnZywERaZQhq5NTQo7Hssm8W7gLC1',
+    'E3BjsvLSFqUqVtDP76qMw4QbETkxvqvg8RTSbRZxWCK4/8HWKpnhyZe7GH1FRu2MiEfvJEEAuLoLbUzFhQA5g38ff',
+    '4rW6iVKUq1RWYQ1VBTrjvP9FL4G3Sn7mBj7Yg12kuckv/EEak3tBHawF92EbiCLFqzAeWkRvhoq5aDzsZNLpMBtsD',
+    'BQjNtXjZB7b9WrqgJZQWfR52T1MqZoqMELAoombywDi8/Dema3hip2KHCwcimPhqrU7kBgmFho7nRBXYPTFkV3iRA',
+    'CLoqV77NtkbrsvtCRDP1vdYxgPZua3nnh7gCNPLzDQQ8/41vxoAGF7XU3JhxJBNihtiWn4xPX2mXPXZjpHSfbP8Ct',
+    'CTYxPujxrXiiqwG3gSBVNKuBk8u7mPG9qVMUc4aT1L8u/DjChEAtiLNnx4L8hBpdt3aDs88ufQ1KBo35K5YP2DM6V',
+    'j6Hx7bdAzcj1NsoRBqdafFuRkgEU48QeZ1i5NVXz9fF/97U5nZnJewd9pkGr9T14vQFMx4XomtA6gEgRE9qjDKPa',
+    'CnUUCGbSrAoaJniPifRU8zHRZ6e5uGRVSpCEj2WMeeSv/91DnCr9T1v1QvcuYxmXh7uB2e3wcgsFKLyKqiWvoDgHH',
+    'BgNq2V6vea2C7Z3cZhDUJTbmN4Y9bKG6dfEPhH19J7Fb/4XAuBSuNc46tG2gpDQEVNaqKmeJv23842QMSg7wT7waF',
+  ])
+
+  // Print DAOs
+  console.log("\n=== Fetching All Futarchy DAOs ===")
+  const service = new FutarchyService(connection)
+  const allDaos = await service.getAllDaos()
+  
+  // Filter out excluded pairs
+  const daos = allDaos.filter(dao => {
+    const pair = `${dao.daoAddress}/${dao.treasuryVaultAddress}`
+    return !EXCLUDED_PAIRS.has(pair)
+  })
+  
+  console.log(`\nFound ${allDaos.length} total DAOs, excluding ${allDaos.length - daos.length}, processing ${daos.length}:`)
+  daos.forEach((dao, idx) => {
+    console.log(`${idx + 1}. DAO: ${dao.daoAddress}`)
+    console.log(`   Treasury: ${dao.treasuryVaultAddress}`)
+  })
+  console.log("")
+
+  // Extract excluded DAO addresses from the pairs
+  const excludedDaoAddresses = new Set(
+    Array.from(EXCLUDED_PAIRS).map(pair => pair.split('/')[0])
+  )
+
   // Futarchy AMM LP positions
-  const ammBalances = await getFutarchyAmmTvl(connection)
+  const ammBalances = await getFutarchyAmmTvl(connection, excludedDaoAddresses)
 
   // Print overlapped TVL with Futarchy AMM
   console.log("== Double Counted TVL ==");
@@ -384,13 +431,9 @@ async function tvl() {
 
   // Futarchy DAO multisig vaults
   console.log("\n=== Futarchy Vaults & Meteora ===")
-  const service = new FutarchyService(connection)
-  console.log("Fetching Futarchy DAOs...")
-
-  const daos = await service.getAllDaos()
   const vaults = daos.map(d => d.treasuryVaultAddress)
 
-  console.log("Found", vaults.length, "Futarchy vaults")
+  console.log("Processing", vaults.length, "Futarchy vaults")
 
   // Add MetaDAO treasury
   vaults.push("BxgkvRwqzYFWuDbRjfTYfgTtb41NaFw1aQ3129F79eBT")
