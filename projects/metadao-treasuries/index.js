@@ -2,7 +2,7 @@
 // Sum of Futarchy DAO treasury balances, Futarchy DAO-owned Meteora DAMM v2 LP positions, and Futarchy DAO-owned Futarchy AMM positions
     // In total MetaDAO project TVL there will be overlap between Futarchy AMM TVL and Futarchy DAO Treasuries (this adapter) because DAOs own part of the Futarchy AMM TVL through LP positions
         // Printed is Futarchy DAO-owned LP TVL for visibility so it can be backed out of rolled up TVL in DeFiLlama
-          // Also double counted in total DeFi TVL will be the DAO-owned Meteora LP positions; they will show up here and in Meteora TVL
+          // Also double counted in total DeFi TVL will be the DAO-owned Meteora and Futarchy AMM LP positions; they will show up here and in Meteora/Futarchy AMM TVL
 const { getConnection, sumTokens2 } = require('../helper/solana')
 const { PublicKey, Keypair } = require('@solana/web3.js')
 const { Wallet, AnchorProvider } = require('@coral-xyz/anchor')
